@@ -36,7 +36,7 @@ wordRe = "[a-zA-Z\-]+"
 stopWords = ["-"]
 cleanExtLinks = "\{\{[^\}]+\}\}"
 
-print("Extracting links, transforming links in text, tokenizing, ans filling a tok-doc matrix...")
+print("Extracting links, transforming links in text, tokenizing, and filling a tok-doc matrix...")
 links = dict()
 tokdoc = dict()
 for idx,doc in enumerate(docs):
