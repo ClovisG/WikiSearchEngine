@@ -31,8 +31,12 @@ def surfStep(origin, links):
 allPages = list(set().union(chain(*links.values()), links.keys()))
 linksIdx = [ [allPages.index(target) for target in links.get(source,list())] for source in allPages ]
 
+espilon = 0.0000000001
+sourceVector = [1-espilon if "DNA" == title else espilon for title in allPages ]
+normSource = sum(sourceVector)
+sourceVector = [x/normSource for x in sourceVector]
 
-sourceVector = [1.0/len(allPages)] * len(allPages)
+#sourceVector = [1.0/len(allPages)] * len(allPages)
 pageRanks = [1.0/len(allPages)] * len(allPages)
 delta = float("inf")
 
@@ -54,10 +58,13 @@ pageRankDict = dict()
 for idx,pageName in enumerate(allPages):
 	pageRankDict[pageName] = pageRanks[idx]
 
+pageRankDict["Bacterial evolution"]
+pageRankDict["DNA"]
+pageRankDict["RNA"]
 
 
 
 # Save the ranks as pickle object
-with open("pageRank.dict",'wb') as fileout:
-	pickle.dump(pageRankDict, fileout, protocol=pickle.HIGHEST_PROTOCOL)
+#with open("pageRank.dict",'wb') as fileout:
+#	pickle.dump(pageRankDict, fileout, protocol=pickle.HIGHEST_PROTOCOL)
 

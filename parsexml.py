@@ -29,32 +29,34 @@ for xmlFile in xmlFiles:
 
 
 # Some regEx
+cleanExtLinks = "\{\{[^\}]+\}\}"
 linkRe = "\[\[([^\]]+)\]\]"
 removeLinkRe = "\[\[[^\]]+\|([^\|\]]+)\]\]"
 removeLink2Re =  "\[\[([^\|\]]+)\]\]"
 wordRe = "[a-zA-Z\-]+"
 stopWords = ["-"]
 
-
+#/temple-grandin-explains-animal
 print("Extracting links, transforming links in text, tokenizing, ans filling a tok-doc matrix...")
 links = dict()
 tokdoc = dict()
 for idx,doc in enumerate(docs):
-	if idx%(len(docs)/20) == 0:
-		print("Progress " + str(idx*100/len(docs))  +"%")
+	if idx%(len(docs)//20) == 0:
+		print("Progress " + str(int(idx*100/len(docs)))  +"%")
 	for link in re.finditer(linkRe,docs[doc]):
 		target = link.group(1).split('|')[0]
 		if target in docs.keys():
 			#print(doc + " --> " + target)
 			links[doc] = links.get(doc,list()) + [target]
 			
+	cleanDoc = re.sub(cleanExtLinks,"",docs[doc])
 
 	# transform links to text
-	docs[doc] = re.sub(removeLinkRe,r"\1",docs[doc])
-	docs[doc] = re.sub(removeLink2Re,r"\1",docs[doc])
+	docs[doc] = re.sub(removeLinkRe,r"\1",cleanDoc)
+	docs[doc] = re.sub(removeLink2Re,r"\1",cleanDoc)
 	
 	# fill the tokdoc matrix
-	for wordre in re.finditer(wordRe,docs[doc]):
+	for wordre in re.finditer(wordRe,cleanDoc):
 		word = wordre.group(0).lower()
 		if word not in stopWords:
 			tokdoc[word] = tokdoc.get(word,list()) + [doc]
