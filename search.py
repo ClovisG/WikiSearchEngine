@@ -1,77 +1,94 @@
 from itertools import chain
+from collections import defaultdict
 import numpy
 import pickle
 import sys
 import copy
 
-with open("tokdoc.dict",'rb') as f:
-	tokdoc = pickle.load(f)
+with open("doctok.dict",'rb') as f:
+	doctok = pickle.load(f)
 
 with open("pageRank.dict",'rb') as f:
 	pageRankDict = pickle.load(f)
 
 
-
-Ntokens = sum(map(len,tokdoc.values()))
-docList = list(set(chain(*tokdoc.values())))
+docList = doctok.keys()
 Ndocs = len(docList)
 
 
-tokInfo = dict()
+tokInfo = defaultdict(float)
 tf = dict()
-tfidf = dict()
-for tok in tokdoc:
-	tokInfo[tok] = -numpy.log(len(set(tokdoc[tok]))/Ndocs)
-	for doc in tokdoc[tok]:
-		if not doc in tf:
-			tf[doc] = dict()
-		tf[doc][tok] = tf[doc].get(tok,0) + 1
+for doc in doctok:
+	tf[doc] = defaultdict(float)
+	for tok in doctok[doc]:
+		tf[doc][tok] += 1
+	for tok in set(doctok[doc]):
+		tokInfo[tok] += 1 # for now only store the counts
 
 for doc in tf:
 	Ntok = sum(tf[doc].values())
 	for tok in tf[doc]:
 		tf[doc][tok] /= Ntok
 
+for tok in tokInfo.keys():
+	tokInfo[tok] = -numpy.log(tokInfo[tok]/Ndocs)
 
-for tok in tokdoc:
-	for doc in tokdoc[tok]:
-		if not doc in tfidf:
-			tfidf[doc] = dict()
-		tfidf[doc][tok] = tf[doc].get(tok,0)*tokInfo[tok]
+print("done.")
+
+print("transposing...",end="")
+tfidf = defaultdict(dict)
+for doc in tf:
+	for tok in tf[doc]:
+		tfidf[tok][doc] = tf[doc][tok]*tokInfo[tok]
+print("done.")
 
 
+
+print("normalizing...",end="")
 tfidfNorm = copy.deepcopy(tfidf)
-for doc in tfidf:
-	norm = numpy.sqrt(sum([val*val for val in tfidf[doc].values()]))
-	for tok in tfidf[doc]:
-		tfidfNorm[doc][tok] = tfidf[doc][tok]/norm
+norm = defaultdict(float)
+for tok in tfidf:
+	for doc in tfidf[tok]:
+		norm[doc] += tfidf[tok].get(doc,0)**2.0
+		
+for tok in tfidf:
+	for doc in tfidf[tok]:
+		tfidfNorm[tok][doc] = tfidf[tok][doc]/numpy.sqrt(norm[doc])
+print("done.")
+
+
 
 def scal(query,doc,tfidf):
 	s = float()
 	for tok in query:
-		s += tfidf[doc].get(tok,0)*tokInfo[tok]
+		s += tfidf[tok].get(doc,0)*tokInfo[tok]
 	return s
 
 def scalNorm(query,doc,tfidf):
 	s = float()
 	for tok in query:
-		s += tfidfNorm[doc].get(tok,0)*tokInfo[tok]
+		s += tfidfNorm[tok].get(doc,0)*tokInfo[tok]
 	return s
 
 # Ranked by token relevance (vector model)
 def getBestResultsNormed(queryStr, topN):
 	query = queryStr.split(" ")
-	searchRes = list(map(lambda d:scalNorm(query,d,tfidf),docList))
-	bestPages = list(reversed([ docList[i] for i in numpy.argsort(searchRes)[-topN:] ]))
-	return bestPages
+	res = defaultdict(float)
+	for tok in query:
+		for doc in tfidfNorm[tok]:
+			res[doc] += tfidfNorm[tok].get(doc,0)*tokInfo[tok]
+	return sorted(res, key=res.get,reverse=True)[0:topN]
+
 
 
 # Ranked by token relevance (vector model)
 def getBestResults(queryStr, topN):
 	query = queryStr.split(" ")
-	searchRes = list(map(lambda d:scal(query,d,tfidf),docList))
-	bestPages = list(reversed([ docList[i] for i in numpy.argsort(searchRes)[-topN:] ]))
-	return bestPages
+	res = defaultdict(float)
+	for tok in query:
+		for doc in tfidf[tok]:
+			res[doc] += tfidf[tok].get(doc,0)*tokInfo[tok]
+	return sorted(res, key=res.get,reverse=True)[0:topN]
 
 def rankResults(results):
 	ranks = [ pageRankDict.get(page,0) for page in results ]

@@ -39,7 +39,7 @@ stopWords = ["-"]
 #/temple-grandin-explains-animal
 print("Extracting links, transforming links in text, tokenizing, ans filling a tok-doc matrix...")
 links = dict()
-tokdoc = dict()
+doctok = dict()
 for idx,doc in enumerate(docs):
 	if idx%(len(docs)//20) == 0:
 		print("Progress " + str(int(idx*100/len(docs)))  +"%")
@@ -55,19 +55,18 @@ for idx,doc in enumerate(docs):
 	docs[doc] = re.sub(removeLinkRe,r"\1",cleanDoc)
 	docs[doc] = re.sub(removeLink2Re,r"\1",cleanDoc)
 	
-	# fill the tokdoc matrix
+	# fill the doctok matrix
+	doctok[doc] = list()
 	for wordre in re.finditer(wordRe,cleanDoc):
 		word = wordre.group(0).lower()
 		if word not in stopWords:
-			tokdoc[word] = tokdoc.get(word,list()) + [doc]
+			doctok[doc] += [word]
 
-for word in tokdoc:
-	tokdoc[word].sort()
 
-print("Saving the links and the tokdoc as pickle objects...")
+print("Saving the links and the doctok as pickle objects...")
 with open("links.dict",'wb') as fileout:
 	pickle.dump(links, fileout, protocol=pickle.HIGHEST_PROTOCOL)
 
-with open("tokdoc.dict",'wb') as fileout:
-	pickle.dump(tokdoc, fileout, protocol=pickle.HIGHEST_PROTOCOL)
+with open("doctok.dict",'wb') as fileout:
+	pickle.dump(doctok, fileout, protocol=pickle.HIGHEST_PROTOCOL)
 
